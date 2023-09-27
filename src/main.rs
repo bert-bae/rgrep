@@ -1,5 +1,6 @@
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
+use log::{info, warn};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -39,7 +40,7 @@ fn find_lines(mut args: Cli, pb: &ProgressBar) -> Result<Vec<String>, std::io::E
         }
 
         if matching_line {
-            found.push(format!("[ln {current_line}] {}", line.replace("\n", "")));
+            found.push(format!("[{} - ln {current_line}] {}", &args.path.to_str().unwrap(), line.replace("\n", "")));
         }
         current_line += 1;
         line.clear();
@@ -49,6 +50,8 @@ fn find_lines(mut args: Cli, pb: &ProgressBar) -> Result<Vec<String>, std::io::E
 }
 
 fn main() {
+    env_logger::init();
+    info!("Beginning search...");
     let args = Cli::parse();
     let progress_bar = ProgressBar::new_spinner();
     progress_bar.enable_steady_tick(Duration::from_millis(200));
@@ -57,7 +60,19 @@ fn main() {
             .unwrap()
             .tick_chars("/|\\- "),
     );
-    let found = find_lines(args, &progress_bar);
+
+    match find_lines(args, &progress_bar) {
+        Ok(matches) => {
+            info!(
+                "Search complete. Found {} matching lines.",
+                &matches.len()
+            );
+
+            for matching_line in matches {
+                println!("{matching_line}");
+            }
+        },
+        Err(e) => warn!("Error searching file: {e}")
+    };
     progress_bar.finish_and_clear();
-    println!("{found:#?}")
 }
