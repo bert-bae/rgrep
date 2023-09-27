@@ -12,18 +12,33 @@ struct Cli {
     /// The path to the file to read
     // #[arg(short = 'f', long = "filepath")]
     path: std::path::PathBuf,
+    #[arg(short = 'c', long = "case_sensitive", default_value_t = false)]
+    case_sensitive: bool
 }
 
-fn find_lines(args: Cli) -> Result<Vec<String>, std::io::Error> { 
+fn find_lines(mut args: Cli) -> Result<Vec<String>, std::io::Error> { 
+    if args.case_sensitive == true {
+        args.pattern = args.pattern.to_lowercase();
+    }
+
     let file = File::open(&args.path).expect("File does not exist");
     let mut reader = BufReader::new(file);
 
     let mut found: Vec<String> = vec![];
     let mut line = String::new();
+    let mut current_line = 1;
     while reader.read_line(&mut line)? != 0 {
-        if line.contains(&args.pattern) {
-            found.push(line.clone());
+        let matching_line: bool;
+        if args.case_sensitive {
+            matching_line = line.to_lowercase().contains(&args.pattern);
+        } else {
+            matching_line = line.contains(&args.pattern);
         }
+
+        if matching_line {
+            found.push(format!("[ln {current_line}] {}", line.replace("\n", "")));
+        }
+        current_line += 1;
         line.clear();
     }
     
@@ -32,8 +47,7 @@ fn find_lines(args: Cli) -> Result<Vec<String>, std::io::Error> {
 
 fn main() {
     let args = Cli::parse();
-    println!("{args:?}");
 
     let found = find_lines(args);
-    println!("{found:?}")
+    println!("{found:#?}")
 }
