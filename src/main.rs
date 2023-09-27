@@ -17,9 +17,11 @@ struct Cli {
     path: std::path::PathBuf,
     #[arg(short = 'c', long = "case_sensitive", default_value_t = false)]
     case_sensitive: bool,
+    #[arg(short = 'r', long = "recursive", default_value_t = false)]
+    recursive: bool
 }
 
-fn find_lines(mut args: Cli, pb: &ProgressBar) -> Result<Vec<String>, std::io::Error> {
+fn find_lines(mut args: Cli, matches: &mut Vec<String>, pb: &ProgressBar) -> Result<bool, std::io::Error> {
     if args.case_sensitive == true {
         args.pattern = args.pattern.to_lowercase();
     }
@@ -27,7 +29,6 @@ fn find_lines(mut args: Cli, pb: &ProgressBar) -> Result<Vec<String>, std::io::E
     let file = File::open(&args.path).expect("File does not exist");
     let mut reader = BufReader::new(file);
 
-    let mut found: Vec<String> = vec![];
     let mut line = String::new();
     let mut current_line = 1;
     while reader.read_line(&mut line)? != 0 {
@@ -40,13 +41,17 @@ fn find_lines(mut args: Cli, pb: &ProgressBar) -> Result<Vec<String>, std::io::E
         }
 
         if matching_line {
-            found.push(format!("[{} - ln {current_line}] {}", &args.path.to_str().unwrap(), line.replace("\n", "")));
+            matches.push(format!(
+                "[{} - ln {current_line}] {}",
+                &args.path.to_str().unwrap(),
+                line.replace("\n", "")
+            ));
         }
         current_line += 1;
         line.clear();
     }
 
-    return Ok(found);
+    return Ok(true);
 }
 
 fn main() {
@@ -61,18 +66,16 @@ fn main() {
             .tick_chars("/|\\- "),
     );
 
-    match find_lines(args, &progress_bar) {
-        Ok(matches) => {
-            info!(
-                "Search complete. Found {} matching lines.",
-                &matches.len()
-            );
+    let mut matches: Vec<String> = vec![];
+    match find_lines(args, &mut matches, &progress_bar) {
+        Ok(_) => {
+            info!("Search complete. Found {} matching lines.", &matches.len());
 
-            for matching_line in matches {
-                println!("{matching_line}");
+            for line in matches {
+                println!("{line}");
             }
-        },
-        Err(e) => warn!("Error searching file: {e}")
+        }
+        Err(e) => warn!("Error searching file: {e}"),
     };
     progress_bar.finish_and_clear();
 }
