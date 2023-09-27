@@ -1,7 +1,7 @@
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::{info, warn};
-use std::fs::{File};
+use std::fs::{metadata, read_dir, File};
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::time::Duration;
@@ -18,40 +18,50 @@ struct Cli {
     #[arg(short = 'c', long = "case_sensitive", default_value_t = false)]
     case_sensitive: bool,
     #[arg(short = 'r', long = "recursive", default_value_t = false)]
-    recursive: bool
+    recursive: bool,
 }
 
-fn find_lines(mut args: Cli, matches: &mut Vec<String>, pb: &ProgressBar) -> Result<bool, std::io::Error> {
-    if args.case_sensitive == true {
-        args.pattern = args.pattern.to_lowercase();
+fn find_lines(
+    path: std::path::PathBuf,
+    args: &Cli,
+    pb: &ProgressBar,
+) -> Result<Vec<String>, std::io::Error> {
+    let mut matches: Vec<String> = vec![];
+    let file = File::open(&path).expect("File does not exist");
+    let md = metadata(&path).unwrap();
+    if md.is_dir() {
+        let directory = read_dir(&args.path).unwrap();
+        for f in directory {
+            let f = f.unwrap();
+            let mut found = find_lines(f.path(), args, pb)?;
+            matches.append(&mut found);
+        }
+    } else {
+        let mut reader = BufReader::new(file);
+        let mut line = String::new();
+        let mut current_line = 1;
+        while reader.read_line(&mut line)? != 0 {
+            pb.tick();
+            let matching_line: bool;
+            if args.case_sensitive {
+                matching_line = line.to_lowercase().contains(&args.pattern.to_lowercase());
+            } else {
+                matching_line = line.contains(&args.pattern);
+            }
+
+            if matching_line {
+                matches.push(format!(
+                    "[{} - ln {current_line}] {}",
+                    path.to_str().unwrap(),
+                    line.replace("\n", "")
+                ));
+            }
+            current_line += 1;
+            line.clear();
+        }
     }
 
-    let file = File::open(&args.path).expect("File does not exist");
-    let mut reader = BufReader::new(file);
-
-    let mut line = String::new();
-    let mut current_line = 1;
-    while reader.read_line(&mut line)? != 0 {
-        pb.tick();
-        let matching_line: bool;
-        if args.case_sensitive {
-            matching_line = line.to_lowercase().contains(&args.pattern);
-        } else {
-            matching_line = line.contains(&args.pattern);
-        }
-
-        if matching_line {
-            matches.push(format!(
-                "[{} - ln {current_line}] {}",
-                &args.path.to_str().unwrap(),
-                line.replace("\n", "")
-            ));
-        }
-        current_line += 1;
-        line.clear();
-    }
-
-    return Ok(true);
+    return Ok(matches);
 }
 
 fn main() {
@@ -66,9 +76,8 @@ fn main() {
             .tick_chars("/|\\- "),
     );
 
-    let mut matches: Vec<String> = vec![];
-    match find_lines(args, &mut matches, &progress_bar) {
-        Ok(_) => {
+    match find_lines(args.path.clone(), &args, &progress_bar) {
+        Ok(matches) => {
             info!("Search complete. Found {} matching lines.", &matches.len());
 
             for line in matches {
