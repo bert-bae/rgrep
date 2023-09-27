@@ -1,7 +1,7 @@
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::{info, warn};
-use std::fs::File;
+use std::fs::{File};
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::time::Duration;
