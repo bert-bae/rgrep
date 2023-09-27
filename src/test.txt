@@ -1,3 +1,6 @@
-Hello world
-Foo Bar
-Fizz Buzz
+hello
+world
+fizz
+buzz
+foo
+bar
