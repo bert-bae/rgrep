@@ -22,17 +22,17 @@ pub struct Cli {
     ignore: String,
 }
 
-pub struct Grrs {
+pub struct Rgrep {
     args: Cli,
     step_dir: StepDir,
 }
 
-impl Grrs {
+impl Rgrep {
     pub fn new(args: Cli) -> Self {
         let ignore = &args.ignore.to_owned();
         let ignored_file_patterns: Vec<String> =
             ignore.split(",").map(|s| String::from(s)).collect();
-        Grrs {
+        Rgrep {
             step_dir: StepDir::new(PathBuf::from(&args.path), ignored_file_patterns),
             args,
         }
