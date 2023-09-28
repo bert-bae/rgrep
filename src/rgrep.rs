@@ -13,7 +13,7 @@ pub struct Cli {
     path: PathBuf,
     /// Case sensitive flag for file content search
     #[arg(short = 'c', long = "case_sensitive", default_value_t = false)]
-    case_sensitive: bool,
+    case_insensitive: bool,
     /// Recursively check all directories within the root path
     #[arg(short = 'r', long = "recursive", default_value_t = false)]
     recursive: bool,
@@ -54,7 +54,7 @@ impl Rgrep {
 
                 let line = String::from_utf8_lossy(&buf);
                 let matching_line: bool;
-                if self.args.case_sensitive {
+                if self.args.case_insensitive {
                     matching_line = line
                         .to_lowercase()
                         .contains(&self.args.pattern.to_lowercase());

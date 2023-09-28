@@ -8,8 +8,8 @@ fn main() {
     env_logger::init();
     info!("Beginning search...");
     let args = Cli::parse();
-    let mut grrs = Rgrep::new(args);
-    match grrs.search() {
+    let mut rgrep = Rgrep::new(args);
+    match rgrep.search() {
         Ok(matches) => println!("{matches:#?}"),
         Err(e) => warn!("Issue searching files: {e}"),
     }
