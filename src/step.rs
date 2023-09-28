@@ -3,7 +3,7 @@ use std::iter::IntoIterator;
 use std::path::PathBuf;
 use std::vec::IntoIter;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StepDir {
     root: PathBuf,
     files: Vec<PathBuf>,
@@ -28,7 +28,8 @@ impl StepDir {
             files: vec![]
         }
     }
-    pub fn step_dirs(&mut self, path: PathBuf) -> Result<bool, std::io::Error> {
+   
+    fn step_dirs(&mut self, path: PathBuf) -> Result<bool, std::io::Error> {
         let path_string = &path.to_str().to_owned().unwrap();
         if self.ignore.iter().any(|s| path_string.contains(s)) {
             return Ok(true);
