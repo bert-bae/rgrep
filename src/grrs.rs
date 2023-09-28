@@ -43,10 +43,15 @@ impl Grrs {
         for path in queue {
             let file = File::open(&path).expect("File does not exist");
             let mut reader = BufReader::new(file);
-            let mut line = String::new();
+            let mut buf = vec![];
             let mut current_line = 1;
-            while reader.read_line(&mut line)? != 0 {
-                // pb.tick();
+
+            while let Ok(_) = reader.read_until(b'\n', &mut buf) {
+                if buf.is_empty() || std::str::from_utf8(&buf).is_err() {
+                    break;
+                }
+
+                let line = String::from_utf8_lossy(&buf);
                 let matching_line: bool;
                 if self.args.case_sensitive {
                     matching_line = line
@@ -64,7 +69,7 @@ impl Grrs {
                     ));
                 }
                 current_line += 1;
-                line.clear();
+                buf.clear();
             }
         }
         return Ok(matches);
