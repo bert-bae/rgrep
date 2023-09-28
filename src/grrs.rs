@@ -14,6 +14,7 @@ pub struct Cli {
     /// Case sensitive flag for file content search
     #[arg(short = 'c', long = "case_sensitive", default_value_t = false)]
     case_sensitive: bool,
+    /// Recursively check all directories within the root path
     #[arg(short = 'r', long = "recursive", default_value_t = false)]
     recursive: bool,
     /// Ignores any files that contain this pattern
@@ -76,7 +77,11 @@ impl Grrs {
     }
 
     fn queue(&mut self) -> std::vec::IntoIter<PathBuf> {
-        let files = self.step_dir.clone().into_iter();
-        files
+        if self.args.recursive {
+            let files = self.step_dir.clone().into_iter();
+            files
+        } else {
+            vec![self.args.path.clone()].into_iter()
+        }
     }
 }
