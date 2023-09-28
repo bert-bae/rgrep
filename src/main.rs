@@ -1,3 +1,5 @@
+mod step;
+use crate::step::StepDir;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::{info, warn};
@@ -20,7 +22,7 @@ struct Cli {
     #[arg(short = 'r', long = "recursive", default_value_t = false)]
     recursive: bool,
     #[arg(short = 'i', long = "ignore", default_value_t = String::new())]
-    ignore: String
+    ignore: String,
 }
 
 fn ignore_file(path: &str, ignore: &str) -> bool {
@@ -41,7 +43,6 @@ fn find_lines(
     if ignore_file(path.to_str().unwrap(), &args.ignore) {
         return Ok(matches);
     }
-
 
     let file = File::open(&path).expect("File does not exist");
     let md = metadata(&path).unwrap();
@@ -81,6 +82,11 @@ fn find_lines(
     return Ok(matches);
 }
 
+fn create_directory_queue(root: std::path::PathBuf, ignore: Vec<String>) {
+    let step_dir = StepDir::new(root, ignore);
+    println!("{:?}", step_dir.into_iter());
+}
+
 fn main() {
     env_logger::init();
     info!("Beginning search...");
@@ -93,15 +99,19 @@ fn main() {
             .tick_chars("/|\\- "),
     );
 
-    match find_lines(args.path.clone(), &args, &progress_bar) {
-        Ok(matches) => {
-            info!("Search complete. Found {} matching lines.", &matches.len());
+    // match find_lines(args.path.clone(), &args, &progress_bar) {
+    //     Ok(matches) => {
+    //         info!("Search complete. Found {} matching lines.", &matches.len());
+    //
+    //         for line in matches {
+    //             println!("{line}");
+    //         }
+    //     }
 
-            for line in matches {
-                println!("{line}");
-            }
-        }
-        Err(e) => warn!("Error searching file: {e}"),
-    };
+    // NEW
+    create_directory_queue(
+        args.path,
+        args.ignore.split(",").map(|s| String::from(s)).collect(),
+    );
     progress_bar.finish_and_clear();
 }
