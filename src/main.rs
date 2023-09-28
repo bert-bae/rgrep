@@ -19,6 +19,17 @@ struct Cli {
     case_sensitive: bool,
     #[arg(short = 'r', long = "recursive", default_value_t = false)]
     recursive: bool,
+    #[arg(short = 'i', long = "ignore", default_value_t = String::new())]
+    ignore: String
+}
+
+fn ignore_file(path: &str, ignore: &str) -> bool {
+    if ignore.is_empty() {
+        return false;
+    }
+
+    let mut split = ignore.split(',');
+    return split.any(|s| path.contains(s));
 }
 
 fn find_lines(
@@ -27,8 +38,14 @@ fn find_lines(
     pb: &ProgressBar,
 ) -> Result<Vec<String>, std::io::Error> {
     let mut matches: Vec<String> = vec![];
+    if ignore_file(path.to_str().unwrap(), &args.ignore) {
+        return Ok(matches);
+    }
+
+
     let file = File::open(&path).expect("File does not exist");
     let md = metadata(&path).unwrap();
+
     if md.is_dir() {
         let directory = read_dir(&args.path).unwrap();
         for f in directory {
