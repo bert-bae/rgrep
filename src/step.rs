@@ -39,7 +39,6 @@ impl StepDir {
             let files = read_dir(path).unwrap();
             for f in files {
                 let f = f.unwrap();
-                println!("{:?}", f.path());
                 self.step_dirs(f.path())?;
             }
         } else {

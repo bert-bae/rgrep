@@ -6,6 +6,7 @@ use log::{info, warn};
 use std::fs::{metadata, read_dir, File};
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::path::PathBuf;
 use std::time::Duration;
 
 /// Search for a pattern in a file and display the lines that contain it.
@@ -40,51 +41,38 @@ fn find_lines(
     pb: &ProgressBar,
 ) -> Result<Vec<String>, std::io::Error> {
     let mut matches: Vec<String> = vec![];
-    if ignore_file(path.to_str().unwrap(), &args.ignore) {
-        return Ok(matches);
-    }
-
     let file = File::open(&path).expect("File does not exist");
-    let md = metadata(&path).unwrap();
-
-    if md.is_dir() {
-        let directory = read_dir(&args.path).unwrap();
-        for f in directory {
-            let f = f.unwrap();
-            let mut found = find_lines(f.path(), args, pb)?;
-            matches.append(&mut found);
+    let mut reader = BufReader::new(file);
+    let mut line = String::new();
+    let mut current_line = 1;
+    while reader.read_line(&mut line)? != 0 {
+        pb.tick();
+        let matching_line: bool;
+        if args.case_sensitive {
+            matching_line = line.to_lowercase().contains(&args.pattern.to_lowercase());
+        } else {
+            matching_line = line.contains(&args.pattern);
         }
-    } else {
-        let mut reader = BufReader::new(file);
-        let mut line = String::new();
-        let mut current_line = 1;
-        while reader.read_line(&mut line)? != 0 {
-            pb.tick();
-            let matching_line: bool;
-            if args.case_sensitive {
-                matching_line = line.to_lowercase().contains(&args.pattern.to_lowercase());
-            } else {
-                matching_line = line.contains(&args.pattern);
-            }
 
-            if matching_line {
-                matches.push(format!(
-                    "[{} - ln {current_line}] {}",
-                    path.to_str().unwrap(),
-                    line.replace("\n", "")
-                ));
-            }
-            current_line += 1;
-            line.clear();
+        if matching_line {
+            matches.push(format!(
+                "[{} - ln {current_line}] {}",
+                path.to_str().unwrap(),
+                line.replace("\n", "")
+            ));
         }
+        current_line += 1;
+        line.clear();
     }
-
     return Ok(matches);
 }
 
-fn create_directory_queue(root: std::path::PathBuf, ignore: Vec<String>) {
+fn create_directory_queue(
+    root: std::path::PathBuf,
+    ignore: Vec<String>,
+) -> std::vec::IntoIter<PathBuf> {
     let step_dir = StepDir::new(root, ignore);
-    println!("{:?}", step_dir.into_iter());
+    step_dir.into_iter()
 }
 
 fn main() {
@@ -99,19 +87,20 @@ fn main() {
             .tick_chars("/|\\- "),
     );
 
-    // match find_lines(args.path.clone(), &args, &progress_bar) {
-    //     Ok(matches) => {
-    //         info!("Search complete. Found {} matching lines.", &matches.len());
-    //
-    //         for line in matches {
-    //             println!("{line}");
-    //         }
-    //     }
-
-    // NEW
-    create_directory_queue(
-        args.path,
+    let file_path = args.path.clone();
+    let queue = create_directory_queue(
+        file_path,
         args.ignore.split(",").map(|s| String::from(s)).collect(),
     );
+
+    let mut matching_lines: Vec<String> = vec![];
+    for path in queue {
+        match find_lines(path.clone(), &args, &progress_bar) {
+            Ok(mut matches) => matching_lines.append(&mut matches),
+            Err(e) => warn!("Encountered an error for {path:?}: {e}"),
+        }
+    }
+
+    println!("{matching_lines:#?}");
     progress_bar.finish_and_clear();
 }
