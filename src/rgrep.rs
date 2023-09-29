@@ -1,6 +1,5 @@
 use crate::step::StepDir;
 use clap::Parser;
-use colored::ColoredString;
 use colored::Colorize;
 use std::fs::File;
 use std::io::prelude::*;
