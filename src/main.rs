@@ -14,7 +14,7 @@ fn main() {
             for line in matches {
                 println!("{line}");
             }
-        },
+        }
         Err(e) => warn!("Issue searching files: {e}"),
     }
 }

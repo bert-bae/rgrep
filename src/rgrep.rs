@@ -1,5 +1,6 @@
 use crate::step::StepDir;
 use clap::Parser;
+use colored::ColoredString;
 use colored::Colorize;
 use std::fs::File;
 use std::io::prelude::*;
@@ -64,7 +65,7 @@ impl Rgrep {
                 }
 
                 if matching_line {
-                    let line = line.replace("\n", "").normal();
+                    let line = self.highlight_match(&line.replace("\n", ""));
                     let path = path.to_str().unwrap().green();
                     let mut line_num: String = String::from("ln ");
                     line_num.push_str(&current_line.to_string());
@@ -75,6 +76,12 @@ impl Rgrep {
             }
         }
         return Ok(matches);
+    }
+
+    fn highlight_match(&self, content: &str) -> String {
+        let split: Vec<&str> = content.split(&self.args.pattern).collect();
+        let highlighted = split.join(&self.args.pattern.on_truecolor(224, 224, 224).to_string());
+        return highlighted;
     }
 
     fn queue(&mut self) -> std::vec::IntoIter<PathBuf> {
