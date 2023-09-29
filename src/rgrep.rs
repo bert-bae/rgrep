@@ -1,5 +1,6 @@
 use crate::step::StepDir;
 use clap::Parser;
+use colored::Colorize;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -63,11 +64,11 @@ impl Rgrep {
                 }
 
                 if matching_line {
-                    matches.push(format!(
-                        "[{} - ln {current_line}] {}",
-                        path.to_str().unwrap(),
-                        line.replace("\n", "")
-                    ));
+                    let line = line.replace("\n", "").normal();
+                    let path = path.to_str().unwrap().green();
+                    let mut line_num: String = String::from("ln ");
+                    line_num.push_str(&current_line.to_string());
+                    matches.push(format!("{path} [{}]: {line}", line_num.blue()));
                 }
                 current_line += 1;
                 buf.clear();

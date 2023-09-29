@@ -10,7 +10,11 @@ fn main() {
     let args = Cli::parse();
     let mut rgrep = Rgrep::new(args);
     match rgrep.search() {
-        Ok(matches) => println!("{matches:#?}"),
+        Ok(matches) => {
+            for line in matches {
+                println!("{line}");
+            }
+        },
         Err(e) => warn!("Issue searching files: {e}"),
     }
 }
