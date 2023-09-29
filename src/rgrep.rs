@@ -68,7 +68,7 @@ impl Rgrep {
                     let path = path.to_str().unwrap().green();
                     let mut line_num: String = String::from("ln ");
                     line_num.push_str(&current_line.to_string());
-                    matches.push(format!("{path} [{}]: {line}", line_num.blue()));
+                    matches.push(format!("{path} [{}]: {}", line_num.blue(), line.trim()));
                 }
                 current_line += 1;
                 buf.clear();
