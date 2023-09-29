@@ -1,4 +1,5 @@
-use std::fs::{metadata, read_dir, File};
+use std::fs::{metadata, read_dir};
+
 use std::iter::IntoIterator;
 use std::path::PathBuf;
 use std::vec::IntoIter;
