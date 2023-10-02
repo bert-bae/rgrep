@@ -1,6 +1,7 @@
 use crate::step::StepDir;
 use clap::Parser;
 use colored::Colorize;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -39,8 +40,8 @@ impl Rgrep {
         }
     }
 
-    pub fn search(&mut self) -> Result<Vec<String>, std::io::Error> {
-        let mut matches: Vec<String> = vec![];
+    pub fn search(&mut self) -> Result<HashMap<String, Vec<String>>, std::io::Error> {
+        let mut matches: HashMap<String, Vec<String>> = HashMap::new();
         let queue = self.queue();
         for path in queue {
             let file = File::open(&path).expect("File does not exist");
@@ -65,10 +66,17 @@ impl Rgrep {
 
                 if matching_line {
                     let line = self.highlight_match(&line.replace("\n", ""));
-                    let path = path.to_str().unwrap().green();
+                    let path = path.to_str().unwrap();
                     let mut line_num: String = String::from("ln ");
                     line_num.push_str(&current_line.to_string());
-                    matches.push(format!("{path} [{}]: {}", line_num.blue(), line.trim()));
+
+                    let hash = matches.get_mut(path);
+                    let formatted = format!("[{}]: {}", line_num.blue(), line.trim());
+                    if hash.is_none() {
+                        matches.insert(path.to_string(), vec![formatted]);
+                    } else {
+                        hash.unwrap().push(formatted);
+                    }
                 }
                 current_line += 1;
                 buf.clear();
